@@ -2,6 +2,10 @@ const { app, BrowserWindow, Menu, ipcMain, contextBridge, shell } = require('ele
 const path = require('path');
 const { machineIdSync } = require('node-machine-id');
 require('dotenv').config(); // Đọc biến môi trường từ file .env
+
+
+const { initServer } = require('./mobile_links/index')
+
 // Hoặc cách khác
 const isDev = process.argv.includes('--dev')
 
