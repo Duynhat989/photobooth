@@ -93,6 +93,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ArrowLeft, Camera, Check, CheckCircle, XCircle, RotateCcw, Trash2 } from 'lucide-vue-next'
+import photobooth from '@/modules/photobooth.module'
 
 // Props
 const props = defineProps({
@@ -124,8 +125,8 @@ const initCamera = async () => {
   try {
     const constraints = {
       video: {
-        width: { ideal: 1200 },
-        height: { ideal: 800 }
+        aspectRatio: 3 / 2,
+        facingMode: "user"
       }
     }
 
@@ -141,7 +142,7 @@ const initCamera = async () => {
     cameraReady.value = true
   } catch (error) {
     console.error('Error accessing camera:', error)
-    
+
     // Nếu không thể sử dụng camera được chỉ định, thử với camera mặc định
     if (props.selectedCameraId) {
       try {
@@ -183,13 +184,13 @@ const capturePhoto = () => {
   // Tính toán kích thước với tỷ lệ 3:2
   const videoWidth = videoEl.videoWidth
   const videoHeight = videoEl.videoHeight
-  
+
   // Tính toán kích thước crop để đảm bảo tỷ lệ 3:2
   let cropWidth, cropHeight, offsetX, offsetY
-  
+
   const targetRatio = 3 / 2
   const currentRatio = videoWidth / videoHeight
-  
+
   if (currentRatio > targetRatio) {
     // Video rộng hơn tỷ lệ mong muốn, crop chiều rộng
     cropHeight = videoHeight
@@ -210,7 +211,7 @@ const capturePhoto = () => {
 
   // Draw cropped video frame to canvas
   ctx.drawImage(
-    videoEl, 
+    videoEl,
     offsetX, offsetY, cropWidth, cropHeight,  // source
     0, 0, cropWidth, cropHeight               // destination
   )
@@ -264,10 +265,17 @@ const goBackToCapture = () => {
   showResults.value = false
 }
 
-const confirmSelection = () => {
-  const selectedPhotoData = selectedPhotos.value.map(index => capturedPhotos.value[index])
-  emit('photosSelected', selectedPhotoData)
+const confirmSelection = async () => {
+    const selectedPhotoData = selectedPhotos.value.map(index => capturedPhotos.value[index])
+    console.log(selectedPhotoData)
+
+    const photo = new photobooth()
+    const uploadResults = await photo.uploadAll(selectedPhotoData)
+    console.log("Upload results:", uploadResults)
+
+    emit('photosSelected', selectedPhotoData)
 }
+
 
 const goBack = () => {
   stopCamera()
@@ -335,14 +343,12 @@ onBeforeUnmount(() => {
 .camera-container {
   flex: 2;
   display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 
 .camera-preview {
   position: relative;
   flex: 1;
-  background: #000;
   border-radius: 12px;
   overflow: hidden;
   display: flex;
@@ -352,8 +358,8 @@ onBeforeUnmount(() => {
 
 .camera-preview video {
   width: 100%;
-  height: 100%;
-  aspect-ratio: 3/2;
+  height: auto;
+  border: 1px solid red;
   object-fit: cover;
 }
 
@@ -371,18 +377,16 @@ onBeforeUnmount(() => {
 
 .focus-frame {
   width: 200px;
-  height: 133px; /* 200 * 2/3 = 133.33 để đảm bảo tỷ lệ 3:2 */
+  height: 133px;
+  /* 200 * 2/3 = 133.33 để đảm bảo tỷ lệ 3:2 */
   border: 2px solid white;
   border-radius: 8px;
   opacity: 0.7;
 }
 
 .camera-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2rem;
   padding: 1rem;
+  margin: auto;
 }
 
 .capture-btn {
@@ -398,6 +402,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   transition: all 0.2s;
   box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+  margin: auto;
+  margin-bottom: 20px;
 }
 
 .capture-btn:hover:not(:disabled) {
@@ -466,7 +472,8 @@ onBeforeUnmount(() => {
 
 .thumbnail-item {
   position: relative;
-  aspect-ratio: 3/2; /* Tỷ lệ 3:2 cho thumbnails */
+  aspect-ratio: 3/2;
+  /* Tỷ lệ 3:2 cho thumbnails */
   border-radius: 8px;
   overflow: hidden;
   background: white;
@@ -536,7 +543,8 @@ onBeforeUnmount(() => {
 
 .photo-item {
   position: relative;
-  aspect-ratio: 3/2; /* Tỷ lệ 3:2 cho ảnh trong grid */
+  aspect-ratio: 3/2;
+  /* Tỷ lệ 3:2 cho ảnh trong grid */
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
@@ -696,7 +704,8 @@ onBeforeUnmount(() => {
 
   .focus-frame {
     width: 150px;
-    height: 100px; /* 150 * 2/3 = 100 */
+    height: 100px;
+    /* 150 * 2/3 = 100 */
   }
 }
 </style>

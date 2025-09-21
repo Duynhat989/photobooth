@@ -38,7 +38,8 @@ body {
     height: 100vh;
 }
 video{
-    aspect-ratio: 3 / 2 !important; 
+    width: 100%;
+    /* aspect-ratio: 3 / 2 !important;  */
 }
 .container {
     display: flex;

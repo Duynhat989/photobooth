@@ -174,7 +174,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import { 
   ArrowLeft, 
   CheckCircle, 
@@ -190,111 +191,96 @@ import {
   X 
 } from 'lucide-vue-next'
 
-export default {
-  name: 'SelectPhoto',
-  components: {
-    ArrowLeft,
-    CheckCircle,
-    XCircle,
-    Star,
-    Grid3X3,
-    List,
-    Check,
-    Eye,
-    Download,
-    ImageOff,
-    Printer,
-    X
-  },
-  props: {
-    photos: {
-      type: Array,
-      default: () => []
-    }
-  },
-  data() {
-    return {
-      selectedPhotos: [],
-      viewMode: 'grid',
-      previewIndex: null
-    }
-  },
-  methods: {
-    togglePhoto(index) {
-      const selectedIndex = this.selectedPhotos.indexOf(index)
-      if (selectedIndex > -1) {
-        this.selectedPhotos.splice(selectedIndex, 1)
-      } else {
-        this.selectedPhotos.push(index)
-      }
-    },
-    
-    selectAll() {
-      this.selectedPhotos = [...Array(this.photos.length).keys()]
-    },
-    
-    selectNone() {
-      this.selectedPhotos = []
-    },
-    
-    selectBest() {
-      // Simple algorithm to select "best" photos - for demo purposes
-      // In real app, this could use image quality metrics
-      const bestIndices = []
-      const step = Math.max(1, Math.floor(this.photos.length / 3))
-      
-      for (let i = 0; i < this.photos.length && bestIndices.length < 3; i += step) {
-        bestIndices.push(i)
-      }
-      
-      this.selectedPhotos = bestIndices
-    },
-    
-    selectByCount(count) {
-      if (count > this.photos.length) {
-        this.selectAll()
-      } else {
-        // Select first N photos or spread them evenly
-        const step = Math.max(1, Math.floor(this.photos.length / count))
-        const indices = []
-        
-        for (let i = 0; i < count; i++) {
-          const index = Math.min(i * step, this.photos.length - 1)
-          if (!indices.includes(index)) {
-            indices.push(index)
-          }
-        }
-        
-        this.selectedPhotos = indices
-      }
-    },
-    
-    previewPhoto(index) {
-      this.previewIndex = index
-    },
-    
-    closePreview() {
-      this.previewIndex = null
-    },
-    
-    downloadPhoto(index) {
-      const link = document.createElement('a')
-      link.href = this.photos[index]
-      link.download = `photo-${index + 1}.jpg`
-      link.click()
-    },
-    
-    confirmSelection() {
-      if (this.selectedPhotos.length === 0) return
-      
-      const selectedPhotoData = this.selectedPhotos.map(index => this.photos[index])
-      this.$emit('photosSelected', selectedPhotoData)
-    },
-    
-    goBack() {
-      this.$emit('back')
-    }
+// Props
+const props = defineProps({
+  photos: {
+    type: Array,
+    default: () => []
   }
+})
+
+// Emits
+const emit = defineEmits(['photosSelected', 'back'])
+
+// Reactive data
+const selectedPhotos = ref([])
+const viewMode = ref('grid')
+const previewIndex = ref(null)
+
+// Methods
+const togglePhoto = (index) => {
+  const selectedIndex = selectedPhotos.value.indexOf(index)
+  if (selectedIndex > -1) {
+    selectedPhotos.value.splice(selectedIndex, 1)
+  } else {
+    selectedPhotos.value.push(index)
+  }
+}
+
+const selectAll = () => {
+  selectedPhotos.value = [...Array(props.photos.length).keys()]
+}
+
+const selectNone = () => {
+  selectedPhotos.value = []
+}
+
+const selectBest = () => {
+  // Simple algorithm to select "best" photos - for demo purposes
+  // In real app, this could use image quality metrics
+  const bestIndices = []
+  const step = Math.max(1, Math.floor(props.photos.length / 3))
+  
+  for (let i = 0; i < props.photos.length && bestIndices.length < 3; i += step) {
+    bestIndices.push(i)
+  }
+  
+  selectedPhotos.value = bestIndices
+}
+
+const selectByCount = (count) => {
+  if (count > props.photos.length) {
+    selectAll()
+  } else {
+    // Select first N photos or spread them evenly
+    const step = Math.max(1, Math.floor(props.photos.length / count))
+    const indices = []
+    
+    for (let i = 0; i < count; i++) {
+      const index = Math.min(i * step, props.photos.length - 1)
+      if (!indices.includes(index)) {
+        indices.push(index)
+      }
+    }
+    
+    selectedPhotos.value = indices
+  }
+}
+
+const previewPhoto = (index) => {
+  previewIndex.value = index
+}
+
+const closePreview = () => {
+  previewIndex.value = null
+}
+
+const downloadPhoto = (index) => {
+  const link = document.createElement('a')
+  link.href = props.photos[index]
+  link.download = `photo-${index + 1}.jpg`
+  link.click()
+}
+
+const confirmSelection = () => {
+  if (selectedPhotos.value.length === 0) return
+  
+  const selectedPhotoData = selectedPhotos.value.map(index => props.photos[index])
+  emit('photosSelected', selectedPhotoData)
+}
+
+const goBack = () => {
+  emit('back')
 }
 </script>
 

@@ -9,7 +9,7 @@
 
         <div v-if="!isCapturing && !showResults" class="setup-screen">
             <div class="camera-preview">
-                <video ref="videoRef" autoplay muted></video>
+                <video ref="videoRef" autoplay muted playsinline></video>
             </div>
 
             <div class="controls">
@@ -47,15 +47,17 @@
                 </div>
             </div>
             <div class="capture-info">
-                <div class="progress-info">
-                    <p class="count">{{ capturedCount }}/{{ selectedCount }}</p>
-                    <p>
-                        <Megaphone size="13" /> {{ txtCountDown }}
-                    </p>
-                </div>
-                <div class="listPhotos">
-                    <div class="photo" v-for="value in capturedPhotos">
-                        <img :src="value" alt="">
+                <div class="capture-info__content">
+                    <div class="progress-info">
+                        <p class="count">{{ capturedCount }}/{{ selectedCount }}</p>
+                        <p>
+                            <Megaphone size="13" /> {{ txtCountDown }}
+                        </p>
+                    </div>
+                    <div class="listPhotos">
+                        <div class="photo" v-for="value in capturedPhotos">
+                            <img :src="value" alt="">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -97,23 +99,24 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ArrowLeft, Camera, Check, CheckCircle, RotateCcw, Megaphone } from 'lucide-vue-next'
 const props = defineProps({
-  selectedCameraId: {
-    type: String,
-    default: null
-  },
-  saveLocation: {
-    type: String,
-    default: 'downloads'
-  },
-  customSavePath: {
-    type: String,
-    default: ''
-  }
+    selectedCameraId: {
+        type: String,
+        default: null
+    },
+    saveLocation: {
+        type: String,
+        default: 'downloads'
+    },
+    customSavePath: {
+        type: String,
+        default: ''
+    }
 })
 
 // Define emits
 const emit = defineEmits(['photosSelected', 'back'])
 import clickSound from '@/assets/camera-shutter-314056.mp3';
+import photobooth from '@/modules/photobooth.module';
 // Template refs
 const videoRef = ref(null)
 const captureVideoRef = ref(null)
@@ -137,20 +140,17 @@ const initCamera = async () => {
     try {
         const constraints = {
             video: {
-                width: { ideal: 1200 },
-                height: { ideal: 800 }
+                aspectRatio: 3 / 2,
+                facingMode: "user"
             }
         }
 
         // Sử dụng selectedCameraId nếu có, ngược lại dùng camera mặc định
+        console.log(props.selectedCameraId)
         if (props.selectedCameraId) {
             constraints.video.deviceId = { exact: props.selectedCameraId }
-        } else {
-            constraints.video.facingMode = 'user'
         }
-
         stream.value = await navigator.mediaDevices.getUserMedia(constraints)
-
         await nextTick()
         if (videoRef.value) {
             videoRef.value.srcObject = stream.value
@@ -158,31 +158,7 @@ const initCamera = async () => {
         }
     } catch (error) {
         console.error('Error accessing camera:', error)
-        
-        // Nếu không thể sử dụng camera được chỉ định, thử với camera mặc định
-        if (props.selectedCameraId) {
-            try {
-                stream.value = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        width: { ideal: 1200 },
-                        height: { ideal: 800 },
-                        facingMode: 'user'
-                    }
-                })
-                
-                await nextTick()
-                if (videoRef.value) {
-                    videoRef.value.srcObject = stream.value
-                    cameraReady.value = true
-                }
-                console.warn('Fallback to default camera')
-            } catch (fallbackError) {
-                console.error('Fallback camera error:', fallbackError)
-                alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.')
-            }
-        } else {
-            alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.')
-        }
+        alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.')
     }
 }
 const stopCamera = () => {
@@ -323,9 +299,15 @@ const retakePhotos = () => {
     selectedPhotos.value = []
     capturedCount.value = null
 }
-
-const confirmSelection = () => {
+ 
+const confirmSelection = async () => {
     const selectedPhotoData = selectedPhotos.value.map(index => capturedPhotos.value[index])
+    console.log(selectedPhotoData)
+
+    const photo = new photobooth()
+    const uploadResults = await photo.uploadAll(selectedPhotoData)
+    console.log("Upload results:", uploadResults)
+
     emit('photosSelected', selectedPhotoData)
 }
 
@@ -346,9 +328,9 @@ onUnmounted(() => {
 })
 
 const requestFullscreen = () => {
-   try {
-     document.documentElement.requestFullscreen()
-   } catch (error) { }
+    try {
+        document.documentElement.requestFullscreen()
+    } catch (error) { }
 }
 
 const exitFullscreenNew = () => {
@@ -415,7 +397,6 @@ const exitFullscreenNew = () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #f8fafc;
     border-radius: 12px;
     overflow: hidden;
 }
@@ -424,6 +405,7 @@ const exitFullscreenNew = () => {
     width: 100%;
     height: auto;
     object-fit: cover;
+    border: 1px solid red;
 }
 
 .controls {
@@ -509,14 +491,14 @@ const exitFullscreenNew = () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: var(--pre-color);
+    background: #000000;
     padding: 5px;
 }
 
 .capture-preview video {
-    width: calc(100vw - 230px);
+    width: calc(100vw);
     height: calc(100vh - 10px);
-    object-fit: contain;
+    object-fit: cover;
 }
 
 .dely {
@@ -547,32 +529,42 @@ const exitFullscreenNew = () => {
 
 
 .capture-info {
-    color: var(--pre-color);
-    padding: 10px;
-    padding-top: 50px;
-    width: 220px;
-    background: white;
+    position: fixed;
+    bottom: 10px;
+    width: 100vw;
+}
+
+.capture-info__content {
+    width: 1000px;
+    height: 120px;
+    margin: auto;
+    background: rgba(160, 160, 160, 0.336);
+    display: flex;
+    border-radius: 10px;
 }
 
 .progress-info {
     font-weight: bold;
     border-radius: 15px;
     padding: 10px 15px;
+    width: 200px;
 }
 
 .progress-info .count {
-    font-size: 3rem;
+    font-size: 2.5rem;
+    color: #0000009d;
 }
 
 .listPhotos {
-    width: 100%;
+    overflow-x: scroll;
     padding: 5px;
-    max-height: calc(100vh - 180px);
-    overflow-y: scroll;
+    display: flex;
+    justify-content: start;
+    gap: 10px;
 }
 
 .listPhotos::-webkit-scrollbar {
-    width: 10px;
+    height: 5px;
 }
 
 /* Track */
@@ -596,7 +588,8 @@ const exitFullscreenNew = () => {
 }
 
 .listPhotos .photo img {
-    width: 100%;
+    width: auto;
+    height: 90px;
     border: 1px solid #0044ff;
     border-radius: 5px;
 }
